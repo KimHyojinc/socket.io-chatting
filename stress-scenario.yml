@@ -1,0 +1,54 @@
+config:
+  target: "http://localhost:3000"
+  phases:
+    - duration: 30
+      arrivalRate: 10
+      rampTo: 10
+      name: Warm up the API
+    - duration: 30
+      arrivalRate: 100
+      rampTo: 30
+      name: Ramp up to peak load
+    - duration: 30
+      arrivalRate: 50
+      name: Sustained peak load
+  engines:
+   socketio-v3: {}
+
+scenarios:
+  - name: My sample scenario
+    engine: socketio-v3
+    flow:
+      # wait for the WebSocket upgrade (optional)
+      - think: 1
+
+      # basic emit
+      - emit:
+          channel: "hello"
+          data: "world"
+
+      # emit an object
+      - emit:
+          channel: "hello"
+          data:
+            id: 42
+            status: "in progress"
+            tags:
+              - "tag1"
+              - "tag2"
+
+      # emit in a custom namespace
+      - namespace: "/my-namespace"
+        emit:
+          channel: "hello"
+          data: "world"
+
+      # emit with acknowledgement
+      - emit:
+          channel: "ping"
+        acknowledge:
+          match:
+            value: "pong"
+
+      # do nothing for 30 seconds then disconnect
+      - think: 30

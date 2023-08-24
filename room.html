@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Socket.IO chat</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-4bw+/aepP/YC94hEpVNVgiZdgIC5+VKNBQNGCHeKRQN+PtmoHDEXuppvnDJzQIu9" crossorigin="anonymous">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding-bottom: 3rem;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        #form {
+            background: rgba(0, 0, 0, 0.15);
+            padding: 0.25rem;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            height: 3rem;
+            box-sizing: border-box;
+            backdrop-filter: blur(10px);
+        }
+
+        #input {
+            border: none;
+            padding: 0 1rem;
+            flex-grow: 1;
+            border-radius: 2rem;
+            margin: 0.25rem;
+        }
+
+        #input:focus {
+            outline: none;
+        }
+
+        #form>button {
+            background: #333;
+            border: none;
+            padding: 0 1rem;
+            margin: 0.25rem;
+            border-radius: 3px;
+            outline: none;
+            color: #fff;
+        }
+
+        #messages {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        #messages>li {
+            padding: 0.5rem 1rem;
+            background: #efefef;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container text-center">
+        <div class="">
+            <div class="alert alert-info" role="alert">
+                <span id="_room"></span>
+            </div>
+            <!-- <button type="button" class="btn btn-danger col-2 mb-3">퇴장</button> -->
+            <!-- <div class="col col-lg-2">
+                <button type="button" class="btn btn-danger">Danger</button>
+            </div> -->
+        </div>
+        <div class="row g-2">
+            <div class="col" id="chat_container">
+                <ul id="messages"></ul>
+            </div>
+        </div>
+    </div>
+    <form id="form" action="">
+        <input id="input" autocomplete="off" /><button>Send</button>
+    </form>
+</body>
+
+<script>
+    //파라미터 룸 네임
+    const searchParams = new URLSearchParams(location.search).get('room');
+    console.log(searchParams);
+    $('#_room').text(searchParams);
+
+    //닉네임 
+    var nickname = Math.floor(Math.random() * (100 - 0) + 1);
+    console.log(nickname);
+    $('#_nickname').text(nickname);
+
+    var form = document.getElementById('form');
+    var input = document.getElementById('input');
+
+    //클라이언트 소켓 생성, 채팅방에 입장시킴
+    //필요 변수 {name: 클라이언트 이름}, {room: 방 고유번호}
+    var socket = io('ws://localhost:3000', {
+        transports: ['websocket'],
+        query: {
+            name: nickname,
+            room: searchParams,
+        }
+    });
+
+    //<join_room> 채팅 입장 소켓
+    //클라이언트 방 첫 입장인지 확인해야 합니다.(api) {type: 0(첫입장), 1:(기본 입장)}
+    socket.emit('join_room', {
+        msg: '클라이언트 첫 입장',
+        type: 0,
+    });
+
+    //클라이언트 -> 서버로 메세지 전송
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        if (input.value) {
+            //<chatting> 채팅 메세지 전송 소켓
+            socket.emit('chatting', input.value);
+            input.value = '';
+        }
+    });
+
+    //서버 -> 클라이언트로 받아온 메세지 출력
+    //{msg: 메세지, type: notice(입장, 퇴장 문구 출력용)|| chat(유저 채팅), time: 전송 시간}
+    socket.on('chatting', function (msg) {
+        //콘솔 찍히면 통신 잘 되고 있어요
+        console.log(msg);
+        //안내 메세지 일 때
+        var notice = 
+        '<div class="p-3 mb-3 bg-primary text-white bg-opacity-75 rounded-3">' + msg.msg + '</div>';
+
+        //내 메세지가 아닐 때
+        var append = 
+        '<div class="p-3 mb-2 bg-secondary bg-opacity-50 text-white rounded-3" style="text-align: left; width: 100%">' +
+        msg.name + ': ' + msg.msg + '   ' + msg.time
+        + '</div>';
+
+        //내 메세지
+        var me = 
+        '<div class="p-3 mb-2 bg-body-secondary text-emphasis-info rounded-3" style="text-align: right; width: 100%">' +
+        msg.msg + '   ' + msg.time
+        + '</div>';
+
+        console.log(msg.name, nickname);
+
+        if (msg.type == 'notice') {
+            //입장, 퇴장 안내 메세지
+            $('#chat_container').append(notice);
+            $('#_room').text(searchParams + '(' + msg.size + ')');
+        } else {
+            //유저 채팅 메세지
+            if (msg.name == nickname) {
+                //내 채팅일 때
+                $('#chat_container').append(me);
+            } else {
+                //상대 채팅일 때
+                $('#chat_container').append(append);
+            }
+        }
+        window.scrollTo(0, document.body.scrollHeight);
+    });
+
+    //<leave_room> 채팅방 나가기
+    //채팅방 나가기 버튼 있으면 나가기 할 때 실행
+    // socket.emit('leave_room', '채팅방 나가기');
+
+    //error
+    socket.io.on("error", (error) => {
+        console.log(error);
+    });
+</script>
+
+</html>
