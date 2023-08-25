@@ -3,7 +3,7 @@
 
 <head>
     <title>Socket.IO chat</title>
-    <script src="/socket.io/socket.io.js"></script>
+    <script src="http://localhost:3000/socket.io/socket.io.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-4bw+/aepP/YC94hEpVNVgiZdgIC5+VKNBQNGCHeKRQN+PtmoHDEXuppvnDJzQIu9" crossorigin="anonymous">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
@@ -98,10 +98,13 @@
     var form = document.getElementById('form');
     var input = document.getElementById('input');
 
+
+    //* php 렌더링 방식이라 소켓 실행 스크립트는 같은 페이지에서만 적용됩니다.
+    //head script socket.io 선언 "{link}/socket.io/socket.io.js"
     //클라이언트 소켓 생성, 채팅방에 입장시킴
     //필요 변수 {name: 클라이언트 이름}, {room: 방 고유번호}
     var socket = io('ws://localhost:3000', {
-        transports: ['websocket'],
+        transports: ['websocket', 'polling'],
         query: {
             name: nickname,
             room: searchParams,
@@ -126,7 +129,7 @@
     });
 
     //서버 -> 클라이언트로 받아온 메세지 출력
-    //{msg: 메세지, type: notice(입장, 퇴장 문구 출력용)|| chat(유저 채팅), time: 전송 시간}
+    //{msg: 메세지, type: notice(입장, 퇴장 문구 출력용)|| chat(유저 채팅), time: 전송 시간, view: 현재 소켓 참여 인원}
     socket.on('chatting', function (msg) {
         //콘솔 찍히면 통신 잘 되고 있어요
         console.log(msg);
@@ -142,7 +145,7 @@
 
         //내 메세지
         var me = 
-        '<div class="p-3 mb-2 bg-body-secondary text-emphasis-info rounded-3" style="text-align: right; width: 100%">' +
+        '<div class="p-3 mb-2 bg-body-secondar text-emphasis-info rounded-3" style="text-align: right; width: 100%; background-color: whitesmoke">' +
         msg.msg + '   ' + msg.time
         + '</div>';
 
@@ -165,14 +168,34 @@
         window.scrollTo(0, document.body.scrollHeight);
     });
 
+
+    //클라이언트 -> 서버 강퇴 요청 전달
+    //클라이언트 강퇴 버튼 누를 때 실행시켜주세요
+    // socket.emit('exit', {
+    //     msg: '클라이언트 강퇴시키기',
+    //     user: 1,
+    // });
+
+    //서버 -> 클라이언트 강퇴 메세지 전달
+    socket.on('exit_room', (msg) => {
+        // 강퇴 api 실행, 리다이렉트 시키기
+        var notice = 
+        '<div class="p-3 mb-3 bg-primary text-white bg-opacity-75 rounded-3">' + msg.msg + '</div>';
+        $('#chat_container').append(notice);
+    });
+
     //<leave_room> 채팅방 나가기
     //채팅방 나가기 버튼 있으면 나가기 할 때 실행
     // socket.emit('leave_room', '채팅방 나가기');
+    
+    socket.io.on('disconnect', (msg) => {
+        console.log('연결 해제 =', msg);
+    });
 
     //error
     socket.io.on("error", (error) => {
         console.log(error);
     });
 </script>
-
+dmonster1016
 </html>
