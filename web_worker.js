@@ -3,14 +3,18 @@
 const express = require('express');
 const moment = require("moment");
 const app = express();
-const http = require('http');
+const { readFileSync } = require("fs");
 const { instrument } = require("@socket.io/admin-ui");
-const server = http.createServer(app, {
+var https = require('https');
+
+//https 보안상에서는 ssl 인증서가 필요합니다.
+const server = https.createServer({
     cors: {
         credentials: true,
-        origin: 'http://localhost:3000'
     },
-});
+    cert: readFileSync("/usr/local/nginx/conf/ssl/yeoguga.dmonster.kr.crt", "utf8"),
+    key: readFileSync("/usr/local/nginx/conf/ssl/yeoguga.dmonster.kr.key", "utf8"),
+}, app);
 const { Server } = require("socket.io");
 const io = new Server(server);
 
@@ -21,27 +25,6 @@ instrument(io, {
     mode: "development",
 });
 
-
-//노드 v8 엔진이 가비지 콜렉션으로 메모리를 자동 수거
-const v8 = require('v8');
-const totalHeapSize = v8.getHeapStatistics().total_available_size;
-const totalHeapSizeGb = (totalHeapSize / 1024 / 1024 / 1024).toFixed(2);
-console.log('totalHeapSizeGb: ', totalHeapSizeGb);
-
-
-app.get('/', (req, res) => {
-    res.sendFile(__dirname + '/index.html');
-    console.log('react', moment());
-});
-
-app.get('/room', (req, res) => {
-    res.sendFile(__dirname + '/room.html');
-    console.log('react', moment());
-});
-
-//io.emit() : 모든 클라이언트 전송
-//broadcast.emit() : 전달자 제외 모든 클라이언트에게 전송
-//io.to(id).emit() : 채팅방 내 사람에게만 전송
 
 //소켓 연결관리
 io.on('connection', (socket) => {
@@ -59,20 +42,41 @@ io.on('connection', (socket) => {
         var size = io.sockets.adapter.rooms.get(socket.handshake.query.room)?.size;
 
         console.log('속한 방 접속자 수', size);
-        console.log('속한 방 이름 확인', socket.rooms);
 
         // 첫 접속시 알림 전달 (첫 접속 인지는 client에서 넘어오는 값으로 확인)
         // type == 0 ? 첫 입장 : 기본 입장
+        const type = msg.type; // type 값은 클라이언트에서 넘어온 값이어야 합니다.
+        const mem_cnt = msg.mem_cnt; // 현재인원
+
+        if (type == 0) {
+            // 첫 접속일 때
+            io.to(socket.handshake.query.room).emit('chatting', {
+                msg: socket.handshake.query.name + ' 님이 입장하셨습니다.',
+                type: 'notice',
+                size: mem_cnt,
+            });
+        } else {
+            // 기본 입장일 때는 알림X
+            /*
+            io.to(socket.handshake.query.room).emit('chatting', {
+                msg: socket.handshake.query.name + '님이 입장하셨습니다.',
+                type: 'notice',
+                size: size,
+            });
+            */
+        }
+        /*
         io.to(socket.handshake.query.room).emit('chatting', {
             msg: socket.handshake.query.name + '님이 입장하셨습니다.',
             type: 'notice',
             size: size,
         });
+        */
     });
 
     //채팅방 메세지 받고 전체 클라이언트에 전달
     socket.on('chatting', (msg) => {
-        console.log('...,.,', io.sockets.adapter.rooms);
+        console.log('...,.,', msg);
         //현재 방의 접속 인원수 확인(읽음, 안읽음 처리용)
         var size = io.sockets.adapter.rooms.get(socket.handshake.query.room)?.size;
         var at = moment().format('a') === 'am' ? '오전' : '오후';
@@ -91,20 +95,23 @@ io.on('connection', (socket) => {
         socket.leave(socket.handshake.query.room);
         //현재 방의 접속 인원수 확인
         var size = io.sockets.adapter.rooms.get(socket.handshake.query.room)?.size;
+        const mem_cnt = msg.mem_cnt - 1; // 현재인원
         io.to(socket.handshake.query.room).emit('chatting', {
-            msg: socket.handshake.query.name + '님이 퇴장하셨습니다.',
+            msg: socket.handshake.query.name + ' 님이 퇴장하셨습니다.',
             type: 'notice',
-            size: size,
+            size: mem_cnt,
         });
     });
 
     //채팅방 강퇴 전달받음
     socket.on('exit_room', (msg) => {
+        const out_name = msg.name; // 강퇴당한 사람 이름
         var size = io.sockets.adapter.rooms.get(socket.handshake.query.room)?.size;
+        const mem_cnt = msg.mem_cnt - 1; // 현재인원
         io.to(socket.handshake.query.room).emit('chatting', {
-            msg: socket.handshake.query.name + '님을 강퇴시켰습니다.',
+            msg: out_name + ' 님을 챗방에서 내보냈습니다.',
             type: 'notice',
-            size: size,
+            size: mem_cnt,
         });
     });
 
@@ -117,16 +124,22 @@ io.on('connection', (socket) => {
         //현재 방의 접속 인원수 확인
         var size = io.sockets.adapter.rooms.get(socket.handshake.query.room)?.size;
         console.log('현재 접속 인원수 ', size);
-        io.to(socket.handshake.query.room).emit('chatting', {
+        /*io.to(socket.handshake.query.room).emit('chatting', {
             msg: socket.handshake.query.name + '님이 퇴장하셨습니다.',
             type: 'notice',
             size: size,
-        });
+        });*/
     });
 
 });
 
+app.use('/', (res, req) => {
+    console.log(moment().format('HH:mm:ss'));
+})
 
-server.listen(3000, () => {
-    console.log('listening on *:3000');
+
+
+server.listen(4000, () => {
+    console.log(server);
+    console.log('listening on *:4000');
 });
