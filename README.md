@@ -15,7 +15,6 @@
 - 소켓을 선언하고 클라이언트와 서버간 연결을 확인합니다.
 - <join_room> 채팅방으로 입장합니다.
   - web상에서 페이지 이동시 웹소켓이 자동 종료되지만 react는 페이지를 이동해도 종료되지 않습니다. disconnect()로 연결 해제를 명시합니다.
-##### Web
   ```
   //web
   <script src="{link:port}/socket.io/socket.io.js"></script>
