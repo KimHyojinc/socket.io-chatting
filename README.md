@@ -20,6 +20,9 @@
   //web
   <script src="{link:port}/socket.io/socket.io.js"></script>
 
+  //react
+  yarn add socket.io-client
+
 
   //http -> ws | https -> wss
   //소켓에 입장하면서 방에 바로 입장합니다.
