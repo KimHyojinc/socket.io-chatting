@@ -10,6 +10,20 @@
 - 로컬테스트 -> worker.js | PHP 테스트 -> Web_worker.js | REACT -> react_worker.js
 
 
+### Description (Server)
+- SETTING (ecosystem.config.js)
+  ```
+  module.exports = {
+    apps : [
+      {
+        name: 'chatting',
+        script    : "./worker.js",
+        max_memory_restart: '300M', // 메모리 300M 이상 넘으면 자동으로 restart 시킵니다
+        watch: true,
+      },
+    ]
+  };
+  ```
 
 ### Description (Client)
 - 소켓을 선언하고 클라이언트와 서버간 연결을 확인합니다.
