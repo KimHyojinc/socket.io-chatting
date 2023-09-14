@@ -11,7 +11,7 @@
 
 
 ### Description (Server)
-- SETTING (ecosystem.config.js)
+- watch setting (ecosystem.config.js)
   ```
   module.exports = {
     apps : [
