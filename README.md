@@ -1,5 +1,28 @@
 # 오픈 멀티 채팅방 웹소켓 (NodeJS & Socket.io)
 
+### 여구가 프로젝트 필수 설치 요소
+```
+(서버 설치)
+node.js // 서버 사양에 맞게 변경하여 사용해주셔도 무방합니다.
+v16.20.2
+
+pm2 // 해당 라이브러리를 통해 채팅 프로세스를 관리합니다.
+npm install pm2 -g
+
+yarn // 프로젝트 패키지 설정 명령어로 사용합니다.
+npm install -g yarn
+
+
+(여구가 채팅서버 설치 경로)
+- cd /data/wwwroot/chat.yeoguga.com
+
+1. 초기 프로젝트 재설정시 설치 경로 이동
+2. 명령어를 통해 패키지를 새로 설치합니다. --> yarn install
+3. 채팅서버의 프로세스를 시작합니다. --> pm2 start ecosystem.config.js
+
+pm2 명령어를 통해 로그 및 통신 상태를 확인할 수 있습니다.
+```
+
 ### Test preview
   ```
   pm2 start ecosystem.config.js
