@@ -26,6 +26,7 @@ pm2 명령어를 통해 로그 및 통신 상태를 확인할 수 있습니다.
 ### Test preview
   ```
   pm2 start ecosystem.config.js
+  http://localhost:3000
   ```
 
 ### Socket.io
